@@ -1,0 +1,93 @@
+import os
+import re
+from tqdm import tqdm
+from nnunet.dataset_conversion.utils import generate_dataset_json
+from nnunet.paths import nnUNet_raw_data
+from nnunet.utilities.file_conversions import convert_mhd_to_nifti
+
+if __name__ == '__main__':
+    """
+    nnU-Net was originally built for 3D images. It is also strongest when applied to 3D segmentation problems because a 
+    large proportion of its design choices were built with 3D in mind. Also note that many 2D segmentation problems, 
+    especially in the non-biomedical domain, may benefit from pretrained network architectures which nnU-Net does not
+    support.
+    Still, there is certainly a need for an out of the box segmentation solution for 2D segmentation problems. And 
+    also on 2D segmentation tasks nnU-Net cam perform extremely well! We have, for example, won a 2D task in the cell 
+    tracking challenge with nnU-Net (see our Nature Methods paper) and we have also successfully applied nnU-Net to 
+    histopathological segmentation problems. 
+    Working with 2D data in nnU-Net requires a small workaround in the creation of the dataset. Essentially, all images 
+    must be converted to pseudo 3D images (so an image with shape (X, Y) needs to be converted to an image with shape 
+    (1, X, Y). The resulting image must be saved in nifti format. Hereby it is important to set the spacing of the 
+    first axis (the one with shape 1) to a value larger than the others. If you are working with niftis anyways, then 
+    doing this should be easy for you. This example here is intended for demonstrating how nnU-Net can be used with 
+    'regular' 2D images. We selected the massachusetts road segmentation dataset for this because it can be obtained 
+    easily, it comes with a good amount of training cases but is still not too large to be difficult to handle.
+    """
+
+    # download data and unzip files, then set the following path according to your system:
+    base = '../../data'
+
+    assert os.path.isdir(base), "Please set the path to the dataset in this script"
+
+    # now start the conversion to nnU-Net:
+    task_name = 'Task570_CAMUS'
+    target_base = os.path.join(nnUNet_raw_data, task_name) # nnUNet_raw_data is a env variable that should be set
+
+    target_imagesTr = os.path.join(target_base, "imagesTr")
+    target_labelsTr = os.path.join(target_base, "labelsTr")
+    target_imagesTs = os.path.join(target_base, "imagesTs")
+
+    os.makedirs(target_imagesTr, exist_ok=True)
+    os.makedirs(target_labelsTr, exist_ok=True)
+    os.makedirs(target_imagesTs, exist_ok=True)
+
+    training_dir = os.path.join(base, 'training')
+    test_dir = os.path.join(base, 'testing')
+
+    # Define resize size for images
+    size = (512, 512)
+
+    # =============================  TRAINING SET  =================================
+
+    for root, _, files in tqdm(os.walk(training_dir), total=len(os.listdir(training_dir)), desc="Training (sparse) samples..."):
+        for file in files:
+            if file.endswith("_gt.mhd") and ("sequence" not in file):
+                # Define inputs
+                input_segmentation_file = os.path.join(root, file)
+                input_image_file = input_segmentation_file.replace("_gt", "")
+
+                # Retrieve unique filename
+                unique_name = os.path.basename(input_image_file)[:-4]
+                # Define outputs
+                output_image_file = os.path.join(target_imagesTr,
+                                unique_name)  # do not specify a file ending! This will be done for you
+                output_seg_file = os.path.join(target_labelsTr, unique_name)  # do not specify a file ending! This will be done for you
+
+                # this utility will convert 2d images that can be read by skimage.io.imread to nifti. You don't need to do anything.
+                # if this throws an error for your images, please just look at the code for this function and adapt it to your needs
+                convert_mhd_to_nifti(input_image_file, output_image_file, is_seg=False, size=size, is_2d_or_3d='2d')
+                convert_mhd_to_nifti(input_segmentation_file, output_seg_file, is_seg=True, size=size, is_2d_or_3d='2d')
+
+    # # =============================  TEST SET  =================================
+    
+    for root, _, files in tqdm(os.walk(test_dir), total=len(os.listdir(test_dir)), desc="Test samples..."):
+        for file in files:
+            pattern = re.compile(r'[24]CH_E[SD].mhd')
+            if pattern.search(file):
+                # Define inputs
+                input_image_file = os.path.join(root, file)
+                # Retrieve unique filename
+                unique_name = os.path.basename(input_image_file)[:-4]
+                # Define outputs
+                output_image_file = os.path.join(target_imagesTs,
+                                unique_name)  # do not specify a file ending! This will be done for you
+
+                # this utility will convert 2d images that can be read by skimage.io.imread to nifti. You don't need to do anything.
+                # if this throws an error for your images, please just look at the code for this function and adapt it to your needs
+                convert_mhd_to_nifti(input_image_file, output_image_file, is_seg=False, size=size, is_2d_or_3d='2d')
+
+
+    # finally we can call the utility for generating a dataset.json
+    generate_dataset_json(os.path.join(target_base, 'dataset.json'), target_imagesTr, target_imagesTs, ('Ultrasound',),
+                          labels={0: 'background', 1: 'LV_endo', 2: 'LV_epi', 3: 'LA'}, dataset_name=task_name, license='hands off!')
+
