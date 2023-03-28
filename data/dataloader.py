@@ -9,18 +9,19 @@ import pandas as pd
 
 class CamusDataset(Dataset):
     """
-    Dataloader for the unsupervised training on the Camus dataset based on the hdf5 file created by `camus_hdf5_conversion.py`.
+    Dataloader for the training of segmentation models on the Camus dataset, based on the training hdf5 file created by `camus_hdf5_conversion.py`.
     It creates a csv file for easy lookup of the data.
     """
-    def __init__(self, file_path, transform=None):
+    def __init__(self, file_path, train_or_test='train', transform=None):
         """
         Inputs:
             file_path - Path to the hdf5 file containing the Camus dataset
+            train_or_test - Whether this dataset will be used for the training or the test set. The DF will be named accordingly.
             transform - Albumentations transformation to apply to the images
         """
 
         assert os.path.exists(file_path), f"File {file_path} does not exist. Please run the `data_preparation.py` script in the /camus directory to create it."
-
+        assert train_or_test in ['train', 'test'], f"train_or_test must be either 'train' or 'test', not {train_or_test}"
         super().__init__()
         self.file = None
         self.file_path = file_path
@@ -28,7 +29,7 @@ class CamusDataset(Dataset):
         self.df = pd.DataFrame(columns=['patient', 'id', 'view', 'ED/ES'])
 
         df_frames_dir = os.path.join(os.path.dirname(self.file_path), 'lookup_tables')
-        df_frames_path = os.path.join(df_frames_dir, f"df_frames.csv")
+        df_frames_path = os.path.join(df_frames_dir, f"df_{train_or_test}ing.csv")
 
         create = True
 

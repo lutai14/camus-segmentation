@@ -57,9 +57,8 @@ cd data/camus/
 python camus_hdf5_conversion.py
 ```
 
-# Training
-## nnU-Net
-### Environment variables
+# Instructions for nnU-Net
+## Environment variables
 First of all, the nnU-Net requires some environment variables to be set. Navigate to the `architectures/nnUNet/` directory, then type the following in your terminal:
 
 ```bash
@@ -68,11 +67,11 @@ export nnUNet_preprocessed="./data/nnUNet_preprocessed"
 export RESULTS_FOLDER="./trained_models"
 ```
 
-#### Data conversion
+### Data conversion
 nnU-Net expects datasets in a structured format. This format closely (but not entirely) follows the data structure of
 the [Medical Segmentation Decthlon](http://medicaldecathlon.com/). A conversion script is provided in `segmentation/nnUNet/` named `camus_MSD_conversion.py`. Running it will populate the `data/nnUNet_raw_data_base` folder.
 
-### Training
+## Training
 1. Before training, nnU-Net requires the _Experiment planning and preprocessing_ step. In your terminal, run:
     ```bash
     nnUNet_plan_and_preprocess -t 570 -pl3d None --verify_dataset_integrity
@@ -89,7 +88,6 @@ the [Medical Segmentation Decthlon](http://medicaldecathlon.com/). A conversion 
     ```
 
 
-
 ## Inference
 To run inference on the test set, please run:
 ```bash
@@ -98,3 +96,11 @@ nnUNet_predict -i ./data/nnUNet_raw_data_base/nnUNet_raw_data/Task570_CAMUS/imag
 
 ## Evaluation
 The evaluation of the segmentation results is evaluated on the ED and ES frames using the [CAMUS submission platform](http://camus.creatis.insa-lyon.fr/challenge/#challenge/5ca20fcb2691fe0a9dac46c8). The raw nnU-Net outputs need to be converted into MHD files that can be correctly processed by the platform. Please run the `process_outputs.py` script and upload the resulting MHD files (saved in the `output` folder) on the submission website.
+
+# Instructions for all other models
+Simply run the `train.py` script and select your model by passing the `--model` argument. Model must be either 'unet', 'laddernet', 'enet', 'segnet', 'lednet', 'anamnet', or 'lvnet':
+```bash
+python train.py --model unet
+```
+
+By default, the script evaluates the model on the test set at the end of the training loop, and automatically converts the predictions in a MHD format compatible with the submission platform. If you've trained a model without running the test set evaluation, simply use the `eval.py` script.

@@ -14,6 +14,7 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
 # Custom imports
+from eval import evaluate_test_set
 from architectures.utils import get_model
 from data.utils import load_train_val_with_transforms
 
@@ -168,7 +169,6 @@ def main(args):
     # Create optimizer and loss module
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, amsgrad=True)
     loss_module = nn.CrossEntropyLoss()
-
     
     # calculate steps per epoch for training and test set
     # initialize a dictionary to store training history
@@ -204,8 +204,11 @@ def main(args):
 
         # Update pbar description
         pbar.set_description(f"Training model... | Epoch: {e:03d} | Train_loss: {train_loss:.4f} | val_loss: {val_loss:.4f})")
-                
-
+    
+    if args.test:
+        print("== Testing model...")
+        evaluate_test_set(args.model_name, experiment_dir, test_hdf5_path = "data/camus_testing.hdf5", original_data_path = "data/testing", seed=args.seed)
+        
 # =============================================== ARG PARSING ===============================================
 
 if __name__ == '__main__':
@@ -226,6 +229,13 @@ if __name__ == '__main__':
                         help='Learning rate to use')
     parser.add_argument('--seed', type=int, default=2023,
                         help='Seed for random number generators')
+    
+    # Whether to evaluate the model on the test set at the end of training
+    parser.add_argument('--test', action='store_true',
+                        help='Whether to evaluate the model on the test set at the end of training.')
+    parser.add_argument('--no_test', dest='test', action='store_false', 
+                        help='Whether to avoid evaluating the model on the test set at the end of training.')
+    parser.set_defaults(test=True)
     
     # Data parameters
     parser.add_argument('--data_path', type=str, default=r'data/camus_training.hdf5',

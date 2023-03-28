@@ -30,7 +30,7 @@ def import_and_resize(file, size, ftype):
     return array_resized.squeeze().permute(idx_order).numpy() 
 
 
-def create_hdf5(data_path, out_file_path, size, overwrite=False):
+def create_hdf5(data_path, size, out_file_path=None, overwrite=False):
     """
     Create a hdf5 file of the CAMUS training dataset. It will contain the sequence files as data, and the metadata as attributes.
     It will be hierarchically organized as follows:
@@ -57,6 +57,9 @@ def create_hdf5(data_path, out_file_path, size, overwrite=False):
     """
 
     assert os.path.exists(data_path), f"Folder {data_path} does not exist."
+
+    if out_file_path is None:
+        out_file_path = os.path.join(os.path.dirname(data_path), f'camus_{os.path.basename(data_path)}.hdf5')
 
     # Check if file already exists. If so, check the overwrite flag.
     if os.path.exists(out_file_path):
@@ -119,14 +122,18 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--data_path', type=str, default='./training', 
+    parser.add_argument('--data_root_path', type=str, default='./',
                         help='Path to the training directory')
-    parser.add_argument('--out_file_path', type=str, default='./camus_training.hdf5',
-                        help='Path to the output hdf5 file')
     parser.add_argument('--size', type=int, nargs=2, default=(512, 512),
                         help='Size of the output images')
     parser.add_argument('--overwrite', default=False, action='store_true', 
                         help='boolean to overwrite the output file if it already exists')
     args = parser.parse_args()
 
-    create_hdf5(args.data_path, args.out_file_path, args.size, args.overwrite)
+    # Create training file
+    training_path = os.path.join(args.data_root_path, 'training')
+    create_hdf5(data_path = training_path, size = args.size, overwrite = args.overwrite)
+
+    # Create testing file
+    testing_path = os.path.join(args.data_root_path, 'testing')
+    create_hdf5(data_path = testing_path, size = args.size, overwrite = args.overwrite)
