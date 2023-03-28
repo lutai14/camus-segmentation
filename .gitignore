@@ -1,3 +1,6 @@
+# Training output
+output/
+
 # MacOS-specific files
 **/.DS_Store
 

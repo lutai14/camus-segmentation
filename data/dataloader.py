@@ -12,13 +12,11 @@ class CamusDataset(Dataset):
     Dataloader for the unsupervised training on the Camus dataset based on the hdf5 file created by `camus_hdf5_conversion.py`.
     It creates a csv file for easy lookup of the data.
     """
-    def __init__(self, file_path, transform=None, leave_out_patients=25, test_set=False):
+    def __init__(self, file_path, transform=None):
         """
         Inputs:
             file_path - Path to the hdf5 file containing the Camus dataset
             transform - Albumentations transformation to apply to the images
-            leave_out_patients - Number of patients to leave out of the training set. 
-            test_set - If True, the dataset is used for the test set and the first `leave_out_patients` patients are returned.
         """
 
         assert os.path.exists(file_path), f"File {file_path} does not exist. Please run the `data_preparation.py` script in the /camus directory to create it."
@@ -27,20 +25,15 @@ class CamusDataset(Dataset):
         self.file = None
         self.file_path = file_path
         self.transform = transform
-        self.leave_out_patients = leave_out_patients
-        self.test_set = test_set
         self.df = pd.DataFrame(columns=['patient', 'id', 'view', 'ED/ES'])
 
         df_frames_dir = os.path.join(os.path.dirname(self.file_path), 'lookup_tables')
-        df_frames_path = os.path.join(df_frames_dir, f"df_frames_{leave_out_patients if leave_out_patients>0 else 'leave_out_ted'}.csv")
-
-        # Extract the patients to leave out.
-        self.leave_out_indices = np.arange(1, self.leave_out_patients+1)
+        df_frames_path = os.path.join(df_frames_dir, f"df_frames.csv")
 
         create = True
 
         # If the dataframe already exists (with the correct amount of leave_out_patients) we load it
-        if not test_set and os.path.exists(df_frames_path):	
+        if os.path.exists(df_frames_path):	
             self.df = pd.read_csv(df_frames_path)
             create = False
 
@@ -55,15 +48,11 @@ class CamusDataset(Dataset):
                     os.makedirs(df_frames_dir)
 
                 print(f"CSV file could not be found at path `{df_frames_path}`. Generating it now. This may take a while...")
+
                 for patient in file.keys():
                         patient_id = int(patient[-4:])
-                        # If we're using the Dataloader for the test set we only consider the first `leave_out_patients` patients, 
-                        # otherwise we discard the first `leave_out_patients` patients  
-                        if (test_set) and (leave_out_patients != 0) and (patient_id not in self.leave_out_indices): continue  # if testing
-                        if (not test_set) and (leave_out_patients != 0) and (patient_id in self.leave_out_indices): continue  # if training
-
                         for view in file[patient].keys():
-                            ED_frame = file[f'{patient}/{view}'].attrs['ED']
+                            ED_frame = file[f'{patient}/{view}'].attrs['ED']                            
                             ES_frame = file[f'{patient}/{view}'].attrs['ES']
 
                             patient_df = pd.DataFrame({
@@ -71,13 +60,12 @@ class CamusDataset(Dataset):
                                 'id': [patient_id]*2, 
                                 'view': [view]*2, 
                                 'ED/ES': ['ED', 'ES'], 
-                                'frame_no': int[ED_frame, ES_frame]},
+                                'frame_no': [ED_frame, ES_frame]},
                                 index=[0,1])
                             self.df = pd.concat([self.df, patient_df], ignore_index=True)
 
                 # Save csv           
-                if not test_set:
-                    self.df.to_csv(df_frames_path, index = False)
+                self.df.to_csv(df_frames_path, index = False)
                     
         self.no_unique_patients = len(set(self.df['patient']))
 
@@ -85,7 +73,7 @@ class CamusDataset(Dataset):
         return len(self.df)
 
     def __getitem__(self, idx):
-        # if idx >= len(self): raise IndexError # Preventing out of bounds, as seen here https://stackoverflow.com/questions/54640906/torch-dataset-looping-too-far
+        if idx >= len(self): raise IndexError # Preventing out of bounds, as seen here https://stackoverflow.com/questions/54640906/torch-dataset-looping-too-far
        
         if self.file is None:
             self.file = h5py.File(self.file_path, 'r')
