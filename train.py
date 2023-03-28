@@ -132,7 +132,7 @@ def main(args):
      # Prepare logging
     if args.save: 
         model_dir = os.path.join(DEST_DIR, args.model)
-        experiment_dir = os.path.join(model_dir, f"{datetime.datetime.now().strftime('date_%d_%m_%Y__time_%H_%M_%S')}")                      # Date and time
+        experiment_dir = os.path.join(model_dir, f"{datetime.datetime.now().strftime('date_%d_%m_%Y__time_%H_%M_%S')}")
         os.makedirs(experiment_dir, exist_ok=True)
         checkpoint_dir = os.path.join(
             experiment_dir, 'checkpoints')
@@ -208,7 +208,7 @@ def main(args):
     if args.test:
         print("== Testing model...")
         evaluate_test_set(args.model_name, experiment_dir, test_hdf5_path = "data/camus_testing.hdf5", original_data_path = "data/testing", seed=args.seed)
-        
+
 # =============================================== ARG PARSING ===============================================
 
 if __name__ == '__main__':
