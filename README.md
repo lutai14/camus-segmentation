@@ -10,7 +10,7 @@
 2. Activate the environment:
 
     ```bash
-    conda activate echosegmentation
+    conda activate camus
     ```
 
 3. Since PyTorch is OS- and CUDA-dependent, install `pytorch` and `torchvision` according to your machine. For this, use [light-the-torch](https://github.com/pmeier/light-the-torch), a small utility included in the provided YAML file that auto-detects compatible CUDA versions from the local setup and installs the correct PyTorch binaries without user interference. Use the following command:

@@ -207,7 +207,7 @@ def main(args):
     
     if args.test:
         print("== Testing model...")
-        evaluate_test_set(args.model_name, experiment_dir, test_hdf5_path = "data/camus_testing.hdf5", original_data_path = "data/testing", seed=args.seed)
+        evaluate_test_set(args.model, experiment_dir, test_hdf5_path = "data/camus_testing.hdf5", original_data_path = "data/testing", seed=args.seed)
 
 # =============================================== ARG PARSING ===============================================
 
