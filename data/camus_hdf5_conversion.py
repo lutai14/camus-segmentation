@@ -32,7 +32,7 @@ def import_and_resize(file, size, ftype):
 
 def create_hdf5(data_path, size, out_file_path=None, overwrite=False):
     """
-    Create a hdf5 file of the CAMUS training dataset. It will contain the sequence files as data, and the metadata as attributes.
+    Create a hdf5 file of the CAMUS dataset. It will contain the sequence files as data, and the metadata as attributes.
     It will be hierarchically organized as follows:
         ├── patient1
         │   ├── 2ch
