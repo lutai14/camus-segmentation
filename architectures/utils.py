@@ -1,5 +1,6 @@
 from .unet import UNet
 from .anamnet import AnamNet
+from .lvnet import LVNet
 
 def get_model(model, **kwargs):
     """
@@ -11,7 +12,7 @@ def get_model(model, **kwargs):
         model - PyTorch model
     """
 
-    assert model.lower() in ["unet", "anamnet"], "Model must be either 'unet', ..."
+    assert model.lower() in ["unet", "anamnet", "lvnet"], "Model must be either 'unet', ..."
     
     if model == "unet":
         return UNet(n_channels=1, n_classes=4, scaling=2, **kwargs)
@@ -26,7 +27,7 @@ def get_model(model, **kwargs):
     elif model == "anamnet":
         return AnamNet()
     elif model == "lvnet":
-        pass #TBA
+        return LVNet()
     else:
         raise NotImplementedError("Model not implemented.")
     

@@ -1,10 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Jun  1 10:04:03 2020
-
-@author: naveen_p
-"""
+# Taken from https://github.com/NaveenPaluru/Segmentation-COVID-19
 
 import torch
 import torch.nn as nn
