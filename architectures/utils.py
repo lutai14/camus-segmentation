@@ -1,4 +1,5 @@
 from .unet import UNet
+from .anamnet import AnamNet
 
 def get_model(model, **kwargs):
     """
@@ -10,7 +11,7 @@ def get_model(model, **kwargs):
         model - PyTorch model
     """
 
-    assert model.lower() in ["unet"], "Model must be either 'unet', ..."
+    assert model.lower() in ["unet", "anamnet"], "Model must be either 'unet', ..."
     
     if model == "unet":
         return UNet(n_channels=1, n_classes=4, scaling=2, **kwargs)
@@ -23,7 +24,7 @@ def get_model(model, **kwargs):
     elif model == "lednet":
         pass #TBA
     elif model == "anamnet":
-        pass #TBA
+        return AnamNet()
     elif model == "lvnet":
         pass #TBA
     else:
