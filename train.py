@@ -38,7 +38,7 @@ def seed_everything(seed):
         torch.cuda.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
 
-def train_loop(model, train_loader, optimizer, loss_module, device):
+def train_loop(model, train_loader, optimizer, loss_module, device, grad_accum):
     """
     Train the model on the provided data loader.
     Inputs:
@@ -47,6 +47,7 @@ def train_loop(model, train_loader, optimizer, loss_module, device):
         optimizer - PyTorch optimizer
         loss_module - PyTorch loss module
         device - PyTorch device
+        grad_accum - Number of gradient accumulation steps
     Outputs:
         loss - Loss value of the model on the provided data
     """
@@ -61,18 +62,20 @@ def train_loop(model, train_loader, optimizer, loss_module, device):
         (x, y) = (x.to(device), y.to(device))
         # perform a forward pass and calculate the training loss
         pred = model(x)
-        # y is a tensor of shape (batch_size, 1, 512, 512). However, we need to one-hot-encode the 4 classes
-        # so that the resulting tensor has shape (batch_size, 4, 512, 512).
         y_one_hot = nn.functional.one_hot(y.long(), num_classes=4).squeeze().permute(0, 3, 1, 2).float()
         loss = loss_module(pred, y_one_hot)
-        # first, zero out any previously accumulated gradients, then
-        # perform backpropagation, and then update model parameters
-        optimizer.zero_grad()
+        loss = loss / grad_accum
         loss.backward()
-        optimizer.step()
+        
+        if (i + 1) % grad_accum == 0:
+            # first, zero out any previously accumulated gradients, then
+            # perform backpropagation, and then update model parameters
+            optimizer.step()
+            optimizer.zero_grad()
+
         # update the running average
-        running_loss += loss.item() / len(train_loader)
-    
+        running_loss += loss.item() * grad_accum / len(train_loader)
+
     return running_loss
 
 def eval_loop(model, val_loader, loss_module, device):
@@ -184,7 +187,7 @@ def main(args):
         ##############
         #  TRAINING  #
         ##############
-        train_loss = train_loop(model, train_loader, optimizer, loss_module, device)
+        train_loss = train_loop(model, train_loader, optimizer, loss_module, device, args.grad_accum)
         logging["train_loss"].append(train_loss)
 
         ##############
@@ -225,6 +228,8 @@ if __name__ == '__main__':
                         help='Number of epochs')
     parser.add_argument('--batch_size', default=8, type=int,
                         help='Minibatch size')
+    parser.add_argument('--grad_accum', default=1, type=int,
+                    help='Number of gradient accumulation steps')
     parser.add_argument('--lr', default=1e-3, type=float,
                         help='Learning rate to use')
     parser.add_argument('--seed', type=int, default=2023,
